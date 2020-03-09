@@ -10,7 +10,8 @@ A simple and easy-to-use module that streamlines the whole user-input side of yo
 - WIP
 
 ### Links
-- WIP
+- [Documentation](https://pycommands.readthedocs.io/en/latest/)
+- Latest Repl.it Discussion *not yet made...*
 
 ### Example
 - WIP
