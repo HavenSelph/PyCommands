@@ -1,3 +1,6 @@
+## NOTICE
+> **This is no longer maintained, I will not add any new features, and likely won't be able to answer questions, sorry.**
+
 # PyCommands
 A simple and easy-to-use module that streamlines the whole user-input side of your script!
 
@@ -38,9 +41,3 @@ while True:
         break
 ```
 The above program will allow you too enter anything you want but will return 'command not found' errors until you enter either `clearscreen` `cls` or `clear`. This module is very simple to use, I wish you luck on finding more out. Check links for more in-depth documentation.
-
-
-
-### Links
-- [Documentation](https://pycommands.readthedocs.io/en/latest/)
-- Latest Repl.it Discussion *not yet made...*
