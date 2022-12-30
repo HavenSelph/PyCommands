@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyCommandsTool",
-    version="1.0.0",
+    version="2.0.1",
     author="Haven Selph",
     author_email="havenselph@gmail.com",
-    description="A simple and easy-to-use module that streamlines the whole user-input side of your script!",
+    description="A simple and easy-to-use module that streamlines the whole user-input side of your script.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/HavenSelph/PyCommands",
