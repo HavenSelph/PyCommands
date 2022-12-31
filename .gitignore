@@ -3,4 +3,5 @@ __pycache__/
 tests/
 .idea/
 dist/
-pycommands_tool_HAVEN_SELPH.egg-info/
+PyCommandsTool.egg-info/
+building.md
