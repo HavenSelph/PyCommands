@@ -2,3 +2,5 @@ venv/
 __pycache__/
 tests/
 .idea/
+dist/
+pycommands_tool_HAVEN_SELPH.egg-info/
