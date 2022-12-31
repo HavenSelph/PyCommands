@@ -25,8 +25,9 @@ pip install PyCommandsTool
 ```  
   
 ### Using The Tool
+
 ```python  
-from PyCommandsTool import Commands
+from src.PyCommandsTool import Commands
 
 COMMANDMODULE = Commands()
 
@@ -34,30 +35,30 @@ COMMANDMODULE = Commands()
 # This is a decorator, it passes the below function as the first argument!
 @COMMANDMODULE.add_command("hi", does="prints hello world")
 def hi():
-    print("Hello world!")
+	print("Hello world!")
 
 
 # You can pass an infinite number of names for the command to be known as
 # then at the end, you can pass "does" so you can have a description for it!
 @COMMANDMODULE.add_command("echo", "repeat", "print", does="prints any passed arguments")
 def echo(*args):
-    for x in args:
-        print(str(x))
+	for x in args:
+		print(str(x))
 
 
 @COMMANDMODULE.add_command("echotwice", "repeattwice", "printtwice", does="prints any passed arguments; but twice")
 def echotwice(*args):
-    print(args)
-    for x in args:
-        print(str(x), str(x), sep="\n")
+	print(args)
+	for x in args:
+		print(str(x), str(x), sep="\n")
 
 
 # Decorators are just a pretty way of doing the below:
 def add(a: int, b: int, *args: int, print_it: bool = True) -> int:
-    x = sum((a, b, *args))
-    if print_it:
-        print(x)
-    return x
+	x = sum((a, b, *args))
+	if print_it:
+		print(x)
+	return x
 
 
 # Notice how in this, I pass the function as an argument. Functionally, this works EXACTLY the same as the above "decorators"
@@ -65,30 +66,30 @@ add = COMMANDMODULE.add_command("add", does="returns the sum of all passed argum
 
 # Now that you've made and registered all your commands, you can create an input loop:
 try:
-    while True:
-        try:
-            last = COMMANDMODULE.execute(input(">>> "))
-            if last[0] == 0:
-                # Code did not encounter an error!
-                pass
-        except COMMANDMODULE.NoValidInput as e:
-            # This is actually a ParseError which can be caught as shown below this except statement!
-            print(e)
+	while True:
+		try:
+			last = COMMANDMODULE.execute(input(">>> "))
+			if last[0] == 0:
+				# Code did not encounter an error!
+				pass
+		except COMMANDMODULE.NoValidInput as e:
+			# This is actually a ParseError which can be caught as shown below this except statement!
+			print(e)
 
-        except COMMANDMODULE.ParseError as e:
-            # Code here runs when any parse error is thrown!
-            print(e)
-        except COMMANDMODULE.NoSuchCommand as e:
-            # Code here runs if the command passed doesn't exist!
-            print(e)
-        except TypeError as e:
-            # This is the except statement you need to add.
-            print(e)
+		except COMMANDMODULE.ParseError as e:
+			# Code here runs when any parse error is thrown!
+			print(e)
+		except COMMANDMODULE.NoSuchCommand as e:
+			# Code here runs if the command passed doesn't exist!
+			print(e)
+		except TypeError as e:
+			# This is the except statement you need to add.
+			print(e)
 
 except KeyboardInterrupt:
-    # Code here runs when CTRL+C is pressed, or when KeyboardInterrupt
-    # is thrown as an error.
-    pass
+	# Code here runs when CTRL+C is pressed, or when KeyboardInterrupt
+	# is thrown as an error.
+	pass
 ``` 
 The above code will wait for input. Here's what it would output if you were to input "invalidcommand": 
 
