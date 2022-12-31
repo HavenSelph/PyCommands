@@ -19,10 +19,11 @@ For around two years, PyCommandsTool was deprecated. However, I have returned to
 - Very customizable settings so you can use this tool how you want to!
   
 ### Installing The Tool
-```  
+
+```
 Linux/Windows:  
 pip install PyCommandsTool  
-```  
+```
   
 ### Using The Tool
 
