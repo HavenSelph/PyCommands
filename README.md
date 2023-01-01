@@ -5,7 +5,7 @@ PyCommandsTool, through the magic of [Decorators](https://peps.python.org/pep-03
 
 For around two years, PyCommandsTool was deprecated. However, I have returned to development on it for a project that uses this tool. I have updated it immensely and hope it can be of as much use to you all as it has been to me.
 
-[Need the documentation?](https://github.com/HavenSelph/PyCommands/blob/master/DOCS.md)
+[Need the documentation?](https://github.com/HavenSelph/PyCommands/wiki/Home)
 
 > *Copyright Haven Selph 2022, MIT License, see [LICENSE.md](https://github.com/HavenSelph/PyCommands/blob/master/LICENSE.md) file for more info.*
 ### Key Features  
