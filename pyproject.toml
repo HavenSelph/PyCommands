@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyCommandsTool"
-version = "2.0.2"
+version = "2.0.4"
 authors = [
   { name="Haven Selph", email="havenselph@gmail.com" },
 ]
@@ -13,12 +13,12 @@ readme = "README.md"
 license = { file="LICENSE.md"}
 requires-python = ">=3.5"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Stable",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
-"Source" = "https://github.com/HavenSelph/PyCommands"
+"Documentation" = "https://github.com/HavenSelph/PyCommands/wiki/Documentation"
 "Issues" = "https://github.com/HavenSelph/PyCommands/issues"
