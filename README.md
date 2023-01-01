@@ -5,7 +5,9 @@ PyCommandsTool, through the magic of [Decorators](https://peps.python.org/pep-03
 
 For around two years, PyCommandsTool was deprecated. However, I have returned to development on it for a project that uses this tool. I have updated it immensely and hope it can be of as much use to you all as it has been to me.
 
-[Need the documentation?](https://github.com/HavenSelph/PyCommands/wiki/Home)
+
+**Getting Started:** [Commands()](https://github.com/HavenSelph/PyCommands/wiki/Documentation#commands) | [add_command()](https://github.com/HavenSelph/PyCommands/wiki/Documentation#add_command) | [execute()](https://github.com/HavenSelph/PyCommands/wiki/Documentation#excute)\
+**Advanced Functions:** [help command](https://github.com/HavenSelph/PyCommands/wiki/Documentation#__help_command) | [command class](https://github.com/HavenSelph/PyCommands/wiki/Documentation#command)
 
 > *Copyright Haven Selph 2022, MIT License, see [LICENSE.md](https://github.com/HavenSelph/PyCommands/blob/master/LICENSE.md) file for more info.*
 ### Key Features  
@@ -19,10 +21,11 @@ For around two years, PyCommandsTool was deprecated. However, I have returned to
 - Very customizable settings so you can use this tool how you want to!
   
 ### Installing The Tool
-```  
+
+```
 Linux/Windows:  
 pip install PyCommandsTool  
-```  
+```
   
 ### Using The Tool
 
@@ -90,7 +93,8 @@ except KeyboardInterrupt:
 	# Code here runs when CTRL+C is pressed, or when KeyboardInterrupt
 	# is thrown as an error.
 	pass
-``` 
+
+```
 The above code will wait for input. Here's what it would output if you were to input "invalidcommand": 
 
 ![inavalid command output](https://cdn.discordapp.com/attachments/572921877668823041/1055632407899938927/image.png)
