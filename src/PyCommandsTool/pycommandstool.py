@@ -9,9 +9,9 @@ class Command:
         self.names = names or [funct.__name__]
         self.name = names[0]
         self.args = inspect.getfullargspec(funct)
+        self.params = inspect.signature(self.funct).parameters
         self.does = does
         self.help_msg = self.usage
-        self.params = inspect.signature(self.funct).parameters
 
     def run(self, *args, **kwargs):
         try:
@@ -100,7 +100,6 @@ class Commands(dict):
     def add_command(self, *names, does=None):
         def inner_fn(funct):
             self.__add_command(Command(funct, names, does or "No information provided for this command"))
-            return funct
 
         return inner_fn
 
