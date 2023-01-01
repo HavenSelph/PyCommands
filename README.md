@@ -27,7 +27,7 @@ pip install PyCommandsTool
 ### Using The Tool
 
 ```python  
-from src.PyCommandsTool import Commands
+from PyCommandsTool import Commands
 
 COMMANDMODULE = Commands()
 
