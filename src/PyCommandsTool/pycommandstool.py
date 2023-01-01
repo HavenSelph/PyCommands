@@ -7,9 +7,11 @@ class Command:
     def __init__(self, funct, names: tuple or list, does):
         self.funct = funct
         self.names = names or [funct.__name__]
+        self.name = names[0]
         self.args = inspect.getfullargspec(funct)
         self.does = does
         self.help_msg = self.usage
+        self.params = inspect.signature(self.funct).parameters
 
     def run(self, *args, **kwargs):
         try:
@@ -34,14 +36,6 @@ class Command:
             params += f" <{param}>  "
 
         return f"| {name}: {self.does}" + "\n" + params
-
-    @property
-    def params(self):
-        return inspect.signature(self.funct).parameters
-
-    @property
-    def name(self):
-        return self.names[0]
 
 
 class Commands(dict):
@@ -139,6 +133,8 @@ class Commands(dict):
             raise self.NoValidInput(self.NoValidInputFlag)
         if cmd in self.keys():
             return 0, self[cmd](args, kwargs), cmd, args, kwargs
+        else:
+            raise self.NoSuchCommand(self.NoSuchCommandFlag.format(cmd[0]))
 
     def parse(self, value=None):
         if not value:
