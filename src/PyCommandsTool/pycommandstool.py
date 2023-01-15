@@ -100,6 +100,7 @@ class Commands(dict):
     def add_command(self, *names, does=None):
         def inner_fn(funct):
             self.__add_command(Command(funct, names, does or "No information provided for this command"))
+            return funct
 
         return inner_fn
 
