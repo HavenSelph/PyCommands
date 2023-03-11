@@ -1,10 +1,15 @@
 # Copyright Haven Selph 2022, MIT License, see LICENSE.md file for more info.
 import inspect
-from parser import *
+
+if __name__ == "__main__":
+    from parser import *
+else:
+    from .parser import *
 
 
 class Command:
-    def __init__(self, funct: callable, names: list[str, ...] or tuple[str, ...], does: str=None, help_msg: str=None) -> None:
+    def __init__(self, funct: callable, names: list[str, ...] or tuple[str, ...], does: str = None,
+                 help_msg: str = None) -> None:
         """
         Generates a new command object to be used in Commands.
 
@@ -26,7 +31,7 @@ class Command:
     @property
     def parameters(self) -> list[str, ...] or tuple[str, ...]:
         """Returns all parameters of this commands function as a tuple."""
-        return [arg[0] for arg in inspect.signature(self.funct).parameters]
+        return [arg for arg in inspect.signature(self.funct).parameters]
 
     @property
     def names(self) -> list[str, ...] or tuple[str, ...]:
@@ -38,7 +43,10 @@ class Command:
         """Returns names[0] of this command."""
         return self.__names[0]
 
-    def usage(self, name: str=None, aliases_sep: str=" | ", aliases_wrap: list[str, str] or tuple[str, str]=("<",">"), param_sep: str=" | ", param_wrap: list[str, str] or tuple[str, str]=("<",">"), setup: str="|{name}: {does}\n|{parameters}") -> str:
+    def usage(self, name: str = None, aliases_sep: str = " | ",
+              aliases_wrap: list[str, str] or tuple[str, str] = ("<", ">"), param_sep: str = " | ",
+              param_wrap: list[str, str] or tuple[str, str] = ("<", ">"),
+              setup: str = "|{name}: {does}\n|{parameters}") -> str:
         """
         Generate a string to show command usage dynamically. Use setup to customize how it looks.
         Example Setup String: "{name}: {does}\n{parameters}"
@@ -66,7 +74,8 @@ class Command:
         """
         name = name if name in self.names else self.name
         parameters = param_sep.join([param_wrap[0] + param + param_wrap[1] for param in self.parameters])
-        aliases = aliases_sep.join([aliases_wrap[0] + str(_name) + aliases_wrap[1] for _name in self.names if _name!=name])
+        aliases = aliases_sep.join(
+            [aliases_wrap[0] + str(_name) + aliases_wrap[1] for _name in self.names if _name != name])
         return setup.format(
             name=name,
             aliases=aliases or "",
@@ -80,37 +89,44 @@ class Command:
 
 
 class Commands(dict):
-    def __init__(self, /, register_help_command: bool=True, register_exit_command: bool=True, register_aliases_command: bool=True) -> None:
+    def __init__(self, /, register_help_command: bool = True, register_exit_command: bool = True,
+                 register_aliases_command: bool = True) -> None:
         """Create a commands dictionary to register commands to."""
         self.names_no_aliases = []
 
         if register_help_command:
-            self.__help_command = self.add_command("help", "info", does="Displays information on a provided command, or all registered commands.")(self.__help_command)
+            self.__help_command = self.add_command("help", "info",
+                                                   does="Displays information on a provided command, or all registered commands.")(
+                self.__help_command)
 
         if register_exit_command:
             self.add_command("exit", "quit", does="Exits the script using Python's built-in 'exit()' method.")(exit)
 
         if register_aliases_command:
-            self.__aliases = self.add_command("aliases", "names", does="Displays all names pointing to a provided command.")(self.__aliases)
+            self.__aliases = self.add_command("aliases", "names",
+                                              does="Displays all names pointing to a provided command.")(self.__aliases)
         super().__init__()
 
-    def __help_command(self, command: str=None) -> None:
+    def __help_command(self, command: str = None) -> None:
         if command:
             setup = "Command: {name} - {does}" if self.get(command).does else "Command: {name}"
-            setup += "\nParameters: {parameters}" if len(self.get(command).parameters)>0 else "\nParameters: [no parameters]"
+            setup += "\nParameters: {parameters}" if len(
+                self.get(command).parameters) > 0 else "\nParameters: [no parameters]"
             setup += "\n{help_msg}" if self.get(command).parameters else ""
             print(self.get(command).usage(command, param_sep=" ", param_wrap=("[", "]"), setup=setup), end="\n" * 2)
         else:
             for command in self.names_no_aliases:
                 setup = "Command: {name} - {does}" if self.get(command).does else "Command: {name}"
-                setup += "\nParameters: {parameters}" if len(self.get(command).parameters)>0 else "\nParameters: [no parameters]"
+                setup += "\nParameters: {parameters}" if len(
+                    self.get(command).parameters) > 0 else "\nParameters: [no parameters]"
                 setup += "\n{help_msg}" if self.get(command).parameters else ""
-                print(self.get(command).usage(command, param_sep=" ", param_wrap=("[","]"), setup=setup), end="\n"*2)
+                print(self.get(command).usage(command, param_sep=" ", param_wrap=("[", "]"), setup=setup), end="\n" * 2)
 
     def __aliases(self, command: str):
         setup = "Command: {name}"
-        setup += "Aliases: {aliases}" if len(self.get(command).names)>1 else "Aliases: Command has no aliases."
-        print(self.get(command).usage(aliases_sep=", ", aliases_wrap=("",""), setup="Command: {name}\nAliases: {aliases}"), end="\n"*2)
+        setup += "Aliases: {aliases}" if len(self.get(command).names) > 1 else "Aliases: Command has no aliases."
+        print(self.get(command).usage(aliases_sep=", ", aliases_wrap=("", ""),
+                                      setup="Command: {name}\nAliases: {aliases}"), end="\n" * 2)
 
     def __add_command(self, command: Command) -> Command:
         for name in command.names:
@@ -121,15 +137,23 @@ class Commands(dict):
         self.names_no_aliases.append(command.name)
         return command
 
-    def add_command(self, *names: str, does: str=None, help_msg: str=None) -> callable:
+    def add_command(self, *names: str, does: str = None, help_msg: str = None) -> callable:
         def wrapper(funct: callable) -> Command:
             return self.__add_command(Command(funct, names, does=does, help_msg=help_msg))
 
         return wrapper
 
+    @staticmethod
+    def change_help(msg):
+        def wrapper(funct: Command) -> Command:
+            funct.help_msg = msg
+            return funct
+
+        return wrapper
+
     def execute(self, text: str) -> any:
-        _out = self.parse_string(text)
-        return self.execute_no_parse(*_out[0], **_out[1])
+        command, args, kwargs = self.parse_string(text)
+        return self.execute_no_parse(command, *args, **kwargs)
 
     def execute_no_parse(self, *args, **kwargs) -> any:
         if not args:
@@ -141,13 +165,8 @@ class Commands(dict):
                 raise self.CommandNotFound(f"Command '{args[0]}' not found.")
 
     @classmethod
-    def parse_string(cls, string: str="") -> tuple[list, dict]:
-        try:
-            _out = parse(string)
-        except Tokenizer.UnexpectedToken as er:
-            raise cls.ParseError(repr(er))
-        except Tokenizer.UnexpectedEOF as er:
-            raise cls.ParseError(repr(er))
+    def parse_string(cls, string: str = "") -> tuple[str, tuple[Any], dict[str, Any]]:
+        _out = Parser(string).parse()
         return _out
 
     def get(self, key) -> Command:  # Included so I can typehint .get()
@@ -155,6 +174,7 @@ class Commands(dict):
 
     class PyCommandsToolException(Exception):
         """A generic exception to be inherited by all custom exceptions in PyCommandsTool."""
+
         def __init__(self, *values: str) -> None:
             super().__init__(*values)
 
@@ -171,9 +191,24 @@ class Commands(dict):
 if __name__ == "__main__":
     cmd = Commands()
 
+
     @cmd.add_command("add", "sum", does="Adds two numbers together.")
     def add(a, b):
         print(a + b)
+
+
+    @cmd.add_command("echo", "print", does="prints stuff")
+    def echo(*args, a=None):
+        print(*args, sep='\n')
+
+
+    @cmd.add_command("test", does="tests stuff", help_msg="this is a test!!!!!!!\nThis is another line of help.")
+    def test(*args, **kwargs):
+        print("Hello world!")
+
+
+    test.help_msg += "overriden"
+    test()
 
     while True:
         try:
