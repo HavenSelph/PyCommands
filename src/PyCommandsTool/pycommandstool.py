@@ -1,6 +1,6 @@
 # Copyright Haven Selph 2022, MIT License, see LICENSE.md file for more info.
 import inspect
-from parser import *
+# from parser import *
 
 
 class Command:

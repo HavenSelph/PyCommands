@@ -1,237 +1,190 @@
-import re
+if __name__ == "__main__":
+    from lexer import Lexer, TokenTypes, Token
+else:
+    from .lexer import Lexer, TokenTypes, Token
+from typing import Any
 
 
-def parse(text: str, protected: bool=False, debug=False) -> tuple[list, dict]:
-    keywords = {}
-
-    def helper(_token: dict) -> any:
-        if debug:
-            print(f"Found a {_token['type']}")
-        match _token:
-            case {"type": "word"}:
-                return _token["value"]
-            case {"type": "string"}:
-                return _token["value"]
-            case {"type": "float"}:
-                return float(_token["value"])
-            case {"type": "integer"}:
-                return int(_token["value"])
-            case {"type": "list"}:
-                return [helper(_tkn) for _tkn in _token["value"]]
-            case {"type": "tuple"}:
-                return tuple([helper(_tkn) for _tkn in _token["value"]])
-            case {"type": "dict"}:
-                return {_tkn["left"]: helper(_tkn["right"]) for _tkn in _token["value"]}
-            case {"type": "assignment"}:
-                keywords[_token["left"]] = helper(_token["right"])
-
-    if debug:
-        print(f"Parsing string: {text}")
-
-    _Tokenizer = Tokenizer(text)
-    _out = []
-    try:
-        if debug:
-            print("Getting all tokens")
-        token = _Tokenizer.getNextToken()
-
-        while token["type"] != "EOF":
-            if debug:
-                print(f"Got Token: {token}")
-            _out.append(helper(token))
-            token = _Tokenizer.getNextToken()
-        if debug:
-            print(f"Returning: {_out}", end="\n\n")
-        return _out, keywords
-    except Tokenizer.UnexpectedToken as e:
-        if debug:
-            print(e)
-        if protected:
-            return [],{}
-        else:
-            raise e
-    except Tokenizer.UnexpectedEOF as e:
-        if debug:
-            print(e)
-        if protected:
-            return [],{}
-        else:
-            raise e
-
-
-class Tokenizer:
-    class UnexpectedEOF(Exception):
-        pass
-
-    class UnexpectedToken(Exception):
-        pass
-
-    def __init__(self, text: str) -> None:
-        """Initializes tokenizer with text"""
+class Parser:
+    def __init__(self, text: str, verbose: bool = False, raise_errors: bool = True) -> None:
         self.text = text
-        self._cursor = 0
+        self.verbose = verbose
+        self.raise_errors = raise_errors
+        self.cursor = 0
+        self.tokens = []
+        self.kwargs = False
+        self.lexer = Lexer(text, verbose=verbose, raise_errors=raise_errors)
+        if not self.raise_errors:
+            self.verbose = True
+        self.log(f"Initializing Parser with text: {text!r}, {verbose=}, {raise_errors=}", caller="__init__")
+        self.log(
+            f"Running the lexer with raise_errors disabled is not recommended, as it can leave the parser in an unstable state.",
+            caller="WARNING", error=True)
 
-    @property
-    def notEOF(self) -> bool:
-        """Returns True if not at end of file"""
-        return self._cursor<len(self.text)
+    def log(self, *args, caller: str = None, error: bool = False, **kwargs) -> None:
+        if self.verbose:
+            color = "\u001b[31m" if error else ""
+            print(f"{color}[Parser] {caller if caller else ''}", *args, **kwargs, sep=" ", end="\u001b[0m\n")
 
-    @property
-    def cursor(self) -> int:
-        """Returns current cursor position"""
-        return self._cursor
-
-    @property
-    def atCursor(self) -> str:
-        """Returns current character at cursor"""
-        if self.notEOF:
-            return self.text[self._cursor]
+    def raise_error(self, error, msg: str, point_text: str, override=None) -> None:
+        if override is not None:
+            cursor = override
+            start = override
         else:
-            return ""
+            cursor = self.current_token.pos_end
+            start = self.current_token.pos_start
+        pos = f"{start}:{cursor}" if start != cursor else cursor
+        out = f"[Parser] {error.__name__}: {msg} at index {pos}\n{self.text}"
+        out += "\n" + " " * (override if override is not None else start) + "^" * (
+                    cursor - start + 1) + f" {point_text}"
+        raise error(out)
 
     @property
-    def fromCursor(self) -> str:
-        """Returns text from cursor"""
-        return self.text[self._cursor:]
+    def eof(self) -> bool:
+        return self.cursor >= len(self.tokens)
 
-    def matchCursor(self, exp: str) -> bool:
-        """Returns True if cursor matches exp"""
-        return re.match(exp, self.atCursor) is not None
+    @property
+    def current_token(self) -> Token:
+        return self.tokens[self.cursor]
 
-    def mvCursor(self, i: int=1) -> int:
-        """Moves cursor by i and returns new cursor position"""
-        self._cursor += i
-        return self.cursor
+    def is_kind(self, kind: TokenTypes) -> bool:
+        return self.current_token.kind == kind
 
-    def consume(self, exp=r"\s") -> str:
-        """Returns next character that doesn't match exp"""
-        while re.match(exp, self.atCursor):
-            self.mvCursor()
-        return self.atCursor
+    def advance(self) -> None:
+        self.cursor += 1
 
-    def getNextToken(self) -> dict:  # Recursive Descent Parser
-        """Returns next token"""
+    def consume(self, kind: TokenTypes) -> Token:
+        try:
+            _token = self.current_token
+        except IndexError:
+            self.raise_error(SyntaxError, f"Expected {kind.name} but got EOF", "Expected a token here.",
+                             override=len(self.text) + 1)
+        if self.current_token.kind == kind:
+            self.log(f"Consumed {kind.name} token: {self.current_token.value!r}", caller="consume")
+            self.advance()
+            return _token
+        self.raise_error(SyntaxError, f"Expected {kind.name} but got {_token.kind}", f"Expected {kind.name}")
 
-        while self.notEOF:  # While not at end of file
-            self.consume()
-            if not self.notEOF:
-                return {"type": "EOF", "value": None}
-            if self.matchCursor(r"[a-zA-Z]"):  # WORD
-                _out = ""
-                while self.notEOF and not self.matchCursor(r"\s"):
-                    if self.matchCursor(r"[a-zA-Z]|[0-9]"):  # Checks if character is a letter or number
-                        _out += self.atCursor
-                        self.mvCursor()
-                    elif self.matchCursor(r"="):  # Checks if character is an assignment
-                        self.mvCursor()
-                        _tmp = self.getNextToken()
-                        if _tmp["type"] in ("float", "integer", "string", "list", "tuple", "dict"):  # If token is of valid type
-                            return {"type": "assignment", "left": _out, "right": _tmp}
-                        elif _tmp["type"] == "EOF":  # If token is EOF raise error
-                            raise self.UnexpectedEOF("Unexpected EOF")
-                        else:  # If token is invalid raise error
-                            raise self.UnexpectedToken(f"Unexpected token '{self.atCursor}'")
-                    elif self.matchCursor(r":"):  # Checks if character is a dictionary
-                        self.mvCursor()
-                        _tmp = self.getNextToken()
-                        if _tmp["type"] in ("float", "integer", "string", "list", "tuple", "dict"):  # If token is of valid type
-                            return {"type": "dict-assignment", "left": _out, "right": _tmp}
-                        else:  # If token is invalid raise error
-                            raise self.UnexpectedToken(f"Unexpected token '{self.atCursor}'")
-                    else:  # If character is not valid raise error
-                        raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-                self.mvCursor()
-                return {"type": "word", "value": _out}
-            elif self.matchCursor(r"[0-9]"):  # NUMBER
-                _out = ""
-                while self.notEOF and self.matchCursor(r"[0-9]|\."):
-                    if self.matchCursor(r"[0-9]"):  # Checks if character is a number
-                        _out += self.atCursor
-                        self.mvCursor()
-                    elif self.matchCursor(r"\."):  # Checks if character is a decimal
-                        if "." in _out:  # Checks if there is already a decimal
-                            raise self.UnexpectedToken(f"Invalid number '{self.atCursor}'")
-                        _out += self.atCursor
-                        self.mvCursor()
-                    else:  # If character is not valid raise error
-                        raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-                return {"type": "float" if "." in _out else "integer", "value": float(_out) if "." in _out else int(_out)}
-            elif self.matchCursor(r"\"|\'"):  # STRING
-                _out = ""
-                _quote = self.atCursor
-                self.mvCursor()
-                while self.atCursor != _quote:  # Until character is a closing quote
-                    if not self.notEOF:  # If at end of file raise error
-                        raise self.UnexpectedEOF("Unexpected EOF")
-                    if self.matchCursor(r"\\"):  # Checks if character is an escape character
-                        self.mvCursor()
-                        if self.matchCursor('n'):  # Checks if character is a newline
-                            raise self.UnexpectedToken("Unexpected character '\\n'")
-                    _out += self.atCursor
-                    self.mvCursor()
-                self.mvCursor()
-                return {"type": "string", "value": _out}
+    def parse(self) -> tuple[str, tuple[Any, ...], dict[str | int, Any]]:
+        self.tokens = self.lexer.tokenize()
+        tokens = '\n'.join([repr(token) for token in self.tokens])
+        self.log(f"Tokens: [\n{tokens}\n]", caller="parse")
+        cmd = self.consume(TokenTypes.Identifier).value
+        args = []
+        kwargs = {}
+        while not self.eof:
+            if not self.current_token.space_before:
+                self.raise_error(SyntaxError, f"Unexpected token: {self.current_token.kind}", "expected a space.")
+            args.append(self.parse_sequence())
+            self.log(f"Found argument: {args[-1]}", caller="parse")
+        if self.kwargs:
+            self.log(f"Found keyword arguments: {self.tokens[-1]}", caller="parse")
+            kwargs = args.pop()
+        self.log(f"Found command: {cmd=!r}, {args=}, {kwargs=}", caller="parse")
+        return cmd, tuple(args), kwargs
 
-            elif self.matchCursor(r"\("):  # TUPLE
-                self.mvCursor()
-                self.consume(" ")
-                _out = [self.getNextToken()]
-                while not self.matchCursor(r"\)"):  # Until character is a closing parenthesis
-                    self.consume(" ")
-                    if not self.notEOF:  # If at end of file raise error
-                        raise self.UnexpectedToken("Unexpected EOF")
-                    if self.matchCursor(r","):
-                        self.mvCursor()
-                        _tmp = self.getNextToken()
-                        if _tmp["type"] in ("float", "integer", "string", "list", "tuple", "dict"):  # If token is of valid type
-                            _out.append(_tmp)
-                        else:  # If token is invalid raise error
-                            raise self.UnexpectedToken(f"Unexpected token '{_tmp['type']}'")
-                    else:
-                        raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-                self.mvCursor()
-                return {"type": "tuple", "value": _out}
+    def parse_sequence(self) -> Any:
+        if not (self.is_kind(TokenTypes.OpenBracket) or self.is_kind(TokenTypes.OpenParenthesis)):
+            return self.parse_dict()
+        close = TokenTypes.CloseBracket if self.is_kind(TokenTypes.OpenBracket) else TokenTypes.CloseParenthesis
+        out = []
+        self.advance()
+        while not self.eof and not self.is_kind(close):
+            out.append(self.parse_sequence())
+            if self.is_kind(TokenTypes.Comma):
+                self.advance()
+        self.log(f"Found list: {out}", caller="parse_sequence")
+        self.advance()
+        return tuple(out) if close == TokenTypes.CloseParenthesis else out
 
-            elif self.matchCursor(r"\["):  # LIST
-                self.mvCursor()
-                self.consume(" ")
-                _out = [self.getNextToken()]
-                while not self.matchCursor(r"\]"):  # Until character is a closing bracket
-                    self.consume(" ")
-                    if not self.notEOF:  # If at end of file raise error
-                        raise self.UnexpectedEOF("Unexpected EOF")
-                    if self.matchCursor(r","):
-                        self.mvCursor()
-                        _tmp = self.getNextToken()
-                        if _tmp["type"] in ("float", "integer", "string", "list", "tuple", "dict"):  # If token is invalid raise error
-                            _out.append(_tmp)
-                        else:  # If token is invalid raise error
-                            raise self.UnexpectedToken(f"Unexpected token '{_tmp['type']}'")
-                    else:
-                        raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-                self.mvCursor()
-                return {"type": "list", "value": _out}
+    def parse_dict(self) -> Any:
+        if not self.is_kind(TokenTypes.OpenBrace):
+            return self.parse_assignment()
+        out = {}
+        self.advance()
+        while not self.eof and not self.is_kind(TokenTypes.CloseBrace):
+            key = self.parse_atom()
+            self.consume(TokenTypes.Colon)
+            out[key] = self.parse_sequence()
+            if self.is_kind(TokenTypes.Comma):
+                self.advance()
+        self.log(f"Found dictionary: {out}", caller="parse_dict")
+        self.advance()
+        return out
 
-            elif self.matchCursor(r"\{"):  # DICTIONARY
-                self.mvCursor()
-                self.consume(" ")
-                _out = [self.getNextToken()]
-                while not self.matchCursor(r"\}"):  # Until character is a closing brace
-                    self.consume(" ")
-                    if not self.notEOF:  # If at end of file raise error
-                        raise self.UnexpectedEOF("Unexpected EOF")
-                    if self.matchCursor(r","):
-                        self.mvCursor()
-                        _tmp = self.getNextToken()
-                        if _tmp["type"]=="dict-assignment":
-                            _out.append(_tmp)
-                        else:  # If token is not dict-assignment raise error
-                            raise self.UnexpectedToken(f"Unexpected token '{_tmp['type']}'")
-                    else:
-                        raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-                self.mvCursor()
-                return {"type": "dict", "value": _out}
+    def parse_assignment(self) -> Any:
+        if self.cursor >= len(self.tokens) - 1 or not (self.is_kind(TokenTypes.Identifier) and self.tokens[
+            self.cursor + 1].kind == TokenTypes.Equal) or self.kwargs:
+            return self.parse_atom()
+        self.kwargs = True
+        kwargs = {}
+        while not self.eof:
+            key = self.consume(TokenTypes.Identifier).value
+            self.consume(TokenTypes.Equal)
+            kwargs[key] = self.parse_sequence()
+        self.log(f"Found keyword arguments: {kwargs}", caller="parse_assignment")
+        return kwargs
 
-            else:  # If character is not valid raise error
-                raise self.UnexpectedToken(f"Unexpected character '{self.atCursor}'")
-        return {"type": "EOF", "value": None}
+    def parse_atom(self) -> Any:
+        match self.current_token.kind:
+            case TokenTypes.StringLiteral:
+                self.log(f"Found string literal: {self.current_token.value!r}", caller="parse_atom")
+                _out = self.current_token.value
+                self.advance()
+                return _out
+            case TokenTypes.Identifier:
+                self.log(f"Found identifier: {self.current_token.value!r}, parsing as string literal",
+                         caller="parse_atom")
+                _out = self.current_token.value
+                self.advance()
+                return _out
+            case TokenTypes.IntegerLiteral:
+                self.log(f"Found integer literal: {self.current_token.value!r}", caller="parse_atom")
+                _out = int(self.current_token.value)
+                self.advance()
+                return _out
+            case TokenTypes.FloatingPointLiteral:
+                self.log(f"Found floating point literal: {self.current_token.value!r}", caller="parse_atom")
+                _out = float(self.current_token.value)
+                self.advance()
+                return _out
+            case TokenTypes.BooleanLiteral:
+                self.log(f"Found boolean literal: {self.current_token.value!r}", caller="parse_atom")
+                _out = self.current_token.value == "True"
+                self.advance()
+                return _out
+            case TokenTypes.NoneLiteral:
+                self.log(f"Found None literal: {self.current_token.value!r}", caller="parse_atom")
+                self.advance()
+                return None
+            case token:
+                self.raise_error(SyntaxError, f"Unexpected token: {token}", "is not valid here")
+
+    def __repr__(self):
+        return f"Parser({self.text!r}, {self.verbose=}, {self.raise_errors=})"
+
+
+if __name__ == '__main__':
+    from rich import print
+
+    raise_error = False
+    parse_text = True
+    verbose = True
+    while True:
+        test = input(">>> ")
+        if test == "raise":
+            raise_error = not raise_error
+            print(f"{raise_error=}")
+            continue
+        elif test == "parse":
+            parse_text = not parse_text
+            print(f"{parse_text=}")
+            continue
+        elif test == "verbose":
+            verbose = not verbose
+            print(f"{verbose=}")
+            continue
+        if not parse_text:
+            print(Lexer(test, verbose, raise_error).tokenize())
+        else:
+            print(Parser(test, verbose, raise_error).parse())
